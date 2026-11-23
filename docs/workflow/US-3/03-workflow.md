@@ -1,6 +1,7 @@
 # US-3 · Workflow record
 
-How US-3 (spend dashboard) went from question to merged code. Each phase has a git tag;
+How US-3 (spend dashboard) went from question to merged code. For the prompt-by-prompt account with
+commentary, see the [annotated session log](../../claude-setup/SESSION_LOG.md). Each phase has a git tag;
 `git log --oneline --decorate us3-explore~1..` shows the whole sequence.
 
 | Phase | Tag | Artifact |
