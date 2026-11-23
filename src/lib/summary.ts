@@ -33,7 +33,17 @@ export type CurrencySummary = {
 const OTHER = "other";
 const TOP_SUBSCRIPTIONS = 3;
 
-type Costed = { name: string; category: string; monthly: Cents; yearly: Cents };
+type SpendBucket = "active" | "trials";
+
+/** A counted subscription with its costs worked out once. */
+type Costed = {
+  name: string;
+  category: string;
+  currency: string;
+  bucket: SpendBucket;
+  monthly: Cents;
+  yearly: Cents;
+};
 
 export function normalizeCategory(raw: string): string {
   const name = raw.trim().toLowerCase();
@@ -75,15 +85,19 @@ function byMonthlyThen<T extends { monthlyCents: number }>(key: (item: T) => str
   return (a: T, b: T) => b.monthlyCents - a.monthlyCents || key(a).localeCompare(key(b));
 }
 
-function categoryRows(active: readonly Costed[], totalMonthly: number): CategoryRow[] {
-  const groups = new Map<string, Costed[]>();
-  for (const item of active) {
-    const group = groups.get(item.category) ?? [];
-    group.push(item);
-    groups.set(item.category, group);
+function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const k = key(item);
+    const group = groups.get(k);
+    if (group) group.push(item);
+    else groups.set(k, [item]);
   }
+  return groups;
+}
 
-  const rows = [...groups].map(([category, items]) => ({
+function categoryRows(active: readonly Costed[], totalMonthly: number): CategoryRow[] {
+  const rows = [...groupBy(active, (i) => i.category)].map(([category, items]) => ({
     category,
     monthlyCents: sum(items.map((i) => i.monthly)),
     yearlyCents: sum(items.map((i) => i.yearly)),
@@ -106,7 +120,9 @@ function topSubscriptions(active: readonly Costed[]): TopSubscription[] {
     .slice(0, TOP_SUBSCRIPTIONS);
 }
 
-function summarizeCurrency(currency: string, active: Costed[], trials: Costed[]): CurrencySummary {
+function summarizeCurrency(currency: string, items: readonly Costed[]): CurrencySummary {
+  const active = items.filter((i) => i.bucket === "active");
+  const trials = items.filter((i) => i.bucket === "trials");
   const monthlyCents = sum(active.map((i) => i.monthly));
   return {
     currency,
@@ -123,16 +139,18 @@ function summarizeCurrency(currency: string, active: Costed[], trials: Costed[])
  * BR-8: only active subscriptions count as spend; trials are reported separately;
  * paused, cancelled and expired are left out.
  */
-function spendBucket(status: SubscriptionStatus): "active" | "trials" | null {
+function spendBucket(status: SubscriptionStatus): SpendBucket | null {
   if (status === "active") return "active";
   if (status === "trial") return "trials";
   return null;
 }
 
-function costed(sub: SubscriptionRecord): Costed {
+function costed(sub: SubscriptionRecord, bucket: SpendBucket): Costed {
   return {
     name: sub.name,
     category: normalizeCategory(sub.category),
+    currency: sub.currency,
+    bucket,
     monthly: monthlyCostCents(sub),
     yearly: yearlyCostCents(sub),
   };
@@ -146,20 +164,14 @@ export function summarizeSpend(
   subscriptions: readonly SubscriptionRecord[],
   now: Date,
 ): CurrencySummary[] {
-  const byCurrency = new Map<string, { active: Costed[]; trials: Costed[] }>();
-
-  for (const sub of subscriptions) {
+  const counted = subscriptions.flatMap((sub) => {
     const bucket = spendBucket(effectiveStatus(sub, now));
-    if (bucket === null) continue;
+    return bucket === null ? [] : [costed(sub, bucket)];
+  });
 
-    const group = byCurrency.get(sub.currency) ?? { active: [], trials: [] };
-    group[bucket].push(costed(sub));
-    byCurrency.set(sub.currency, group);
-  }
-
-  return [...byCurrency]
+  return [...groupBy(counted, (i) => i.currency)]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([currency, { active, trials }]) => summarizeCurrency(currency, active, trials));
+    .map(([currency, items]) => summarizeCurrency(currency, items));
 }
 
 /**

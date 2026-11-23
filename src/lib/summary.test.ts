@@ -229,6 +229,18 @@ describe("summarizeSpend", () => {
     expect(usd.byCategory.reduce((t, r) => t + r.yearlyCents, 0)).toBe(usd.yearlyCents);
   });
 
+  it("AC-3.5: returns every category; only the dashboard limits rows", () => {
+    const categories = ["a", "b", "c", "d", "e", "f", "g"];
+    const usd = only(
+      summarizeSpend(
+        categories.map((category, i) => sub({ amount: 1000 - i * 100, category })),
+        NOW,
+      ),
+    );
+    expect(usd.byCategory.map((r) => r.category)).toEqual(categories);
+    expect(usd.byCategory.reduce((t, r) => t + r.percent, 0)).toBe(100);
+  });
+
   it("lists the top 3 subscriptions by monthly cost", () => {
     const usd = only(
       summarizeSpend(
