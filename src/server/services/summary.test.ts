@@ -104,6 +104,18 @@ describe("getSpendSummary", () => {
     expect(summaries.map((s) => [s.currency, s.monthlyCents])).toEqual([["EUR", 200]]);
   });
 
+  it("AC-3.4: filtering to a currency with no spend returns an empty list", async () => {
+    await addSubscription({
+      name: "A",
+      amountCents: 100,
+      currency: "USD",
+      category: "x",
+      billingCycle: "monthly",
+    });
+
+    expect(await getSpendSummary({ currency: "GBP", now: NOW })).toEqual([]);
+  });
+
   it("BR-5: applies expiry as of the given now", async () => {
     await addSubscription({
       name: "Ending",
