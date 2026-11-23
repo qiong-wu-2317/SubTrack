@@ -1,8 +1,20 @@
 import { cents, roundDiv, type Cents } from "@/lib/money";
-import type { Billable } from "@/lib/types";
+import type { Billable, BillingCycle } from "@/lib/types";
 
 /** An exact multiplier as an integer fraction, so no float ever touches money. */
 type Ratio = { num: number; den: number };
+type Period = "monthly" | "yearly";
+
+/**
+ * Per-cycle multipliers. BR-2 gives the monthly column; BR-10 gives the yearly column,
+ * which is derived from the cycle directly, never as monthly × 12.
+ */
+const FIXED_CYCLE_RATIOS: Record<Exclude<BillingCycle, "custom">, Record<Period, Ratio>> = {
+  weekly: { monthly: { num: 52, den: 12 }, yearly: { num: 52, den: 1 } },
+  monthly: { monthly: { num: 1, den: 1 }, yearly: { num: 12, den: 1 } },
+  quarterly: { monthly: { num: 1, den: 3 }, yearly: { num: 4, den: 1 } },
+  yearly: { monthly: { num: 1, den: 12 }, yearly: { num: 1, den: 1 } },
+};
 
 function intervalDaysOf(sub: Billable): number {
   const days = sub.intervalDays;
@@ -12,36 +24,11 @@ function intervalDaysOf(sub: Billable): number {
   return days;
 }
 
-// BR-2: monthly normalization factors.
-function monthlyRatio(sub: Billable): Ratio {
-  switch (sub.billingCycle) {
-    case "weekly":
-      return { num: 52, den: 12 };
-    case "monthly":
-      return { num: 1, den: 1 };
-    case "quarterly":
-      return { num: 1, den: 3 };
-    case "yearly":
-      return { num: 1, den: 12 };
-    case "custom":
-      return { num: 365, den: 12 * intervalDaysOf(sub) };
-  }
-}
-
-// BR-10: yearly comes from the cycle directly, never from monthly × 12.
-function yearlyRatio(sub: Billable): Ratio {
-  switch (sub.billingCycle) {
-    case "weekly":
-      return { num: 52, den: 1 };
-    case "monthly":
-      return { num: 12, den: 1 };
-    case "quarterly":
-      return { num: 4, den: 1 };
-    case "yearly":
-      return { num: 1, den: 1 };
-    case "custom":
-      return { num: 365, den: intervalDaysOf(sub) };
-  }
+function ratioFor(sub: Billable, period: Period): Ratio {
+  if (sub.billingCycle !== "custom") return FIXED_CYCLE_RATIOS[sub.billingCycle][period];
+  // Custom cycles: 365 days a year, spread over 12 months.
+  const days = intervalDaysOf(sub);
+  return period === "monthly" ? { num: 365, den: 12 * days } : { num: 365, den: days };
 }
 
 // BR-9: recurring fees are charged once per cycle; one-time fees are not run-rate.
@@ -53,15 +40,16 @@ function perCycleCents(sub: Billable): number {
   return total;
 }
 
-function normalize(sub: Billable, ratio: Ratio): Cents {
+function normalize(sub: Billable, period: Period): Cents {
+  const { num, den } = ratioFor(sub, period);
   // BR-2: scale the whole per-cycle amount, then round exactly once.
-  return cents(roundDiv(perCycleCents(sub) * ratio.num, ratio.den));
+  return cents(roundDiv(perCycleCents(sub) * num, den));
 }
 
 export function monthlyCostCents(sub: Billable): Cents {
-  return normalize(sub, monthlyRatio(sub));
+  return normalize(sub, "monthly");
 }
 
 export function yearlyCostCents(sub: Billable): Cents {
-  return normalize(sub, yearlyRatio(sub));
+  return normalize(sub, "yearly");
 }
