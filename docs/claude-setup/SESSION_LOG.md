@@ -8,7 +8,7 @@
 | Tool calls | 292 (as of entry 16): Bash 160 · Write 51 · Edit 35 · Read 34 · AskUserQuestion 4 · TaskStop 4 · Skill 2 · ToolSearch 1 · ExitPlanMode 1 |
 | Skills | `superpowers:brainstorming`, `superpowers:test-driven-development` |
 | Modes | `/init` ×3, **plan mode** (`/plan`) for US-3 |
-| Outcome | Scaffold + US-3 spend dashboard, 105 tests, `src/lib` 100% line coverage, PRs #1–#4 |
+| Outcome | Scaffold + US-3 spend dashboard, 105 tests, `src/lib` 100% line coverage, PRs #1–#5 |
 
 ## How to read this log
 Each entry has four parts:
@@ -19,7 +19,7 @@ Each entry has four parts:
   repeat or avoid. *These are added commentary, not part of the original session.*
 - **Evidence**: the commit, tag, PR or file it produced, so each claim can be checked.
 
-Commit hashes refer to the workflow-ordered history on `main` (via PR #4). Phase tags: `us3-explore`,
+Commit hashes refer to the workflow-ordered history on `main` (via PR #4; this log via PR #5). Phase tags: `us3-explore`,
 `us3-plan`, `us3-implement`, `us3-refactor`. Phase write-ups: [`docs/workflow/US-3/`](../workflow/US-3/).
 
 **Arc of the session:** context (1–4) → guardrails (5) → scaffold (6) → **explore + plan** (7) →
