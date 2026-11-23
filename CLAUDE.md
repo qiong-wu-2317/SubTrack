@@ -51,7 +51,7 @@ npx prisma db seed                            # fake demo data; skips if the DB 
 ```
 
 **Setup and state:** first-time setup is `cp .env.example .env && npm install && npm run db:migrate && npx prisma db seed`.
-Before running e2e tests, run `npx playwright install chromium` once. US-3 (dashboard) is mid-TDD: tests written, stubs not implemented yet. See
+Before running e2e tests, run `npx playwright install chromium` once. US-3 (dashboard) is done. See
 `docs/PROGRESS.md` for what's next. Create new files where `docs/ARCHITECTURE.md` places them.
 Don't invent a new layout.
 
