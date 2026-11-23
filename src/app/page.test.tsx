@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import DashboardPage from "@/app/page";
+import DashboardPage, { dynamic } from "@/app/page";
 import { getSpendSummary } from "@/server/services/summary";
 import { asCents, currencySummary } from "../../tests/fixtures";
 import { count, render } from "../../tests/render";
@@ -27,6 +27,10 @@ describe("dashboard page", () => {
     const input = mockedSummary.mock.calls[0]?.[0];
     expect(input?.now).toBeInstanceOf(Date);
     expect(input?.currency).toBeUndefined();
+  });
+
+  it("AC-3.8: renders per request so BR-5 always uses today's date", () => {
+    expect(dynamic).toBe("force-dynamic");
   });
 
   it("shows an empty state when there are no active subscriptions", async () => {
