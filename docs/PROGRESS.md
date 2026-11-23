@@ -4,19 +4,17 @@
 - **Scaffold:** Next.js 15.5 (App Router), React 19, TypeScript strict + `noUncheckedIndexedAccess`,
   Tailwind 4, Prisma 6 (SQLite), Zod 4, date-fns 4, Vitest 3, Playwright. npm 11 `allowScripts`
   approves install scripts only for `prisma`, `@prisma/client`, `@prisma/engines` and `esbuild`.
-
-## In progress: US-3 spend dashboard, strict TDD restart (RED)
-Plan: `~/.claude/plans/i-want-to-implement-zesty-snowflake.md`. The first build was test-after, so it was
-moved to branch `backup/us3-test-after` (reference only; don't copy from it). On `main`:
-- **In place:** migration `add_subscriptions` (Subscription, Fee, PaymentMethod), `prisma/seed.ts`,
-  the domain types in `src/lib/types.ts`, and the docs decisions below.
-- **Red:** 95 tests, 92 failing. Each one fails in its own feature: the stub throws `Not implemented: <fn>`,
-  or the UI renders nothing. The 3 passing tests are `types.test.ts`, which pins the domain value lists
-  kept as interface.
-- **Stubs to implement (green), in order:** `src/lib/money.ts` → `billing.ts` → `status.ts` → `summary.ts`
-  → `src/server/{schemas,errors}.ts` + `repo/subscriptions.ts` → `services/summary.ts` →
-  `app/api/summary/route.ts` → `components/{CategoryBreakdown,CurrencySummaryCard}.tsx` → `app/page.tsx`.
-- UI tests render with `react-dom/server` (`tests/render.ts`) and assume the `en-US` locale for currency strings.
+- **US-3 spend dashboard**, built with strict TDD (plan: `~/.claude/plans/i-want-to-implement-zesty-snowflake.md`).
+  Red commit `2e1d8c7` (95 tests, 92 failing in their own feature), then green one layer at a time.
+  The earlier test-after build is kept on branch `backup/us3-test-after` for the record only.
+  - Domain (`src/lib`, 100% line coverage): `money` (BR-1), `billing` (BR-2, BR-9, BR-10),
+    `status` (BR-4, BR-5), `summary` (BR-6, BR-8, category rows, percents, top 3, 5-row rollup).
+  - Migration `add_subscriptions`: Subscription, Fee and PaymentMethod. Payment comes with US-6.
+  - `getSpendSummary` service, `GET /api/summary`, and the dashboard at `/` all share one code path.
+  - `prisma/seed.ts`: fake USD and EUR data covering every cycle, a trial, a paused plan, an expired plan, and fees.
+  - UI tests render with `react-dom/server` (`tests/render.ts`) and assume the `en-US` locale for currency strings.
+  - Verified: `npm run check` (95 tests), `npm run test:coverage`, `next build`, and live `/` and
+    `/api/summary` against the seed. Totals matched hand-computed values.
 
 ## Decisions made during US-3
 - Date fields use the `Date` suffix (`nextRenewalDate`, `trialEndDate`); `API.md` was updated to match.
