@@ -1,0 +1,13 @@
+// Domain models (Subscription, Payment, Fee, PaymentMethod) are added in the first
+// feature migration. See docs/PRD.md § Core entities.
+// ADR-2: SQLite in dev; switch `provider` to "postgresql" for prod.
+// ADR-6: enums are stored as strings; Zod in src/server/schemas.ts owns allowed values.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
