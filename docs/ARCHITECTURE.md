@@ -3,18 +3,21 @@
 ## Overview
 Single Next.js (App Router) app. Server Components read data; Server Actions mutate it.
 A thin REST layer under `src/app/api/` exists only for export and future mobile use.
+Reads and writes both go through services, so a page and its matching REST route share one code path
+(e.g. the dashboard and `GET /api/summary` both call `getSpendSummary`).
 
 ```
 Browser ──► Next.js App Router
-             ├─ Server Components ──► src/server/repo/*  ──► Prisma ──► SQLite (dev) / Postgres (prod)
-             ├─ Server Actions    ──► zod validate ──► src/server/services/* ──► src/lib/* (pure logic)
-             └─ /api/export       ──► same services
+             ├─ Server Components ──────────────────┐
+             ├─ Server Actions    ──► zod validate ─┼─► src/server/services/* ──► src/server/repo/* ──► Prisma ──► SQLite (dev) / Postgres (prod)
+             └─ /api/*            ──► zod validate ─┘            │
+                                                                 └─► src/lib/* (pure logic)
 ```
 
 ## Layers (dependency direction: top → bottom only)
 | Layer | Path | Rule |
 |---|---|---|
-| UI | `src/app/**`, `src/components/**` | No Prisma imports. Calls Server Actions. |
+| UI | `src/app/**`, `src/components/**` | No Prisma imports. Pages read via services; mutations call Server Actions. |
 | Actions / routes | `src/app/**/actions.ts`, `src/app/api/**` | Validate input with Zod, call services. |
 | Services | `src/server/services/` | Business workflows (log payment → advance renewal). |
 | Repositories | `src/server/repo/` | The only code that touches Prisma. |
