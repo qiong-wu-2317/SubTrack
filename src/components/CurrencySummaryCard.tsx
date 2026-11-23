@@ -1,5 +1,5 @@
 import { CategoryBreakdown } from "@/components/CategoryBreakdown";
-import { formatCents } from "@/lib/money";
+import { formatCents, type Cents } from "@/lib/money";
 import type { CurrencySummary } from "@/lib/summary";
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -13,7 +13,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function CurrencySummaryCard({ summary }: { summary: CurrencySummary }) {
   const { currency, trials } = summary;
-  const money = (amount: CurrencySummary["monthlyCents"]) => formatCents(amount, currency);
+  // BR-6: every amount on a card is in that card's currency.
+  const money = (amount: Cents) => formatCents(amount, currency);
 
   return (
     <section

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "@/app/api/summary/route";
+import { dynamic, GET } from "@/app/api/summary/route";
 import { getSpendSummary } from "@/server/services/summary";
 
 vi.mock("@/server/services/summary", () => ({ getSpendSummary: vi.fn() }));
@@ -11,6 +11,10 @@ describe("GET /api/summary", () => {
   beforeEach(() => {
     mockedSummary.mockReset();
     mockedSummary.mockResolvedValue([]);
+  });
+
+  it("AC-3.8: is never cached, so BR-5 always uses today's date", () => {
+    expect(dynamic).toBe("force-dynamic");
   });
 
   it("returns summaries for all currencies by default", async () => {
