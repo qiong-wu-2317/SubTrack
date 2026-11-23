@@ -213,6 +213,22 @@ describe("summarizeSpend", () => {
     expect(sum).toBe(usd.monthlyCents);
   });
 
+  it("AC-3.2: category yearly totals add up to the currency's per-cycle yearly total", () => {
+    const usd = only(
+      summarizeSpend(
+        [
+          sub({ amount: 1000, billingCycle: "weekly", category: "a" }),
+          sub({ amount: 1000, billingCycle: "quarterly", category: "b" }),
+          sub({ amount: 700, billingCycle: "custom", intervalDays: 14, category: "c" }),
+        ],
+        NOW,
+      ),
+    );
+    // BR-10: 52000 + 4000 + 18250, not the sum of monthly amounts × 12 (= 74244)
+    expect(usd.yearlyCents).toBe(74250);
+    expect(usd.byCategory.reduce((t, r) => t + r.yearlyCents, 0)).toBe(usd.yearlyCents);
+  });
+
   it("lists the top 3 subscriptions by monthly cost", () => {
     const usd = only(
       summarizeSpend(
