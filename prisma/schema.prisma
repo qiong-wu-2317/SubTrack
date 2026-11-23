@@ -1,7 +1,8 @@
-// Domain models (Subscription, Payment, Fee, PaymentMethod) are added in the first
-// feature migration. See docs/PRD.md § Core entities.
+// See docs/PRD.md § Core entities. Payment is added with US-6.
 // ADR-2: SQLite in dev; switch `provider` to "postgresql" for prod.
-// ADR-6: enums are stored as strings; Zod in src/server/schemas.ts owns allowed values.
+// ADR-6: enums are stored as strings; allowed values live in src/lib/types.ts and are
+// validated by Zod in src/server/schemas.ts.
+// BR-7: DateTime columns hold UTC. `*Date` columns are calendar days at UTC midnight.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,4 +11,57 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model Subscription {
+  id              String         @id @default(cuid())
+  name            String
+  vendor          String?
+  category        String         @default("other")
+  /// BR-1: integer minor units, charged once per billing cycle.
+  amountCents     Int
+  /// ISO 4217, uppercase (BR-6).
+  currency        String
+  /// weekly | monthly | quarterly | yearly | custom
+  billingCycle    String
+  /// Required when billingCycle = "custom".
+  intervalDays    Int?
+  startDate       DateTime
+  nextRenewalDate DateTime
+  endDate         DateTime?
+  trialEndDate    DateTime?
+  autoRenew       Boolean        @default(true)
+  /// trial | active | paused | cancelled | expired (BR-4)
+  status          String         @default("active")
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  fees            Fee[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([currency, status])
+}
+
+model Fee {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  /// tax | setup | late | fx | other
+  kind           String
+  /// BR-1: minor units, in the subscription's currency.
+  amountCents    Int
+  /// BR-9: recurring fees are charged once per billing cycle.
+  recurring      Boolean
+  createdAt      DateTime     @default(now())
+
+  @@index([subscriptionId])
+}
+
+model PaymentMethod {
+  id            String         @id @default(cuid())
+  label         String
+  /// At most 4 digits. Never a full card number (PRD non-goals).
+  last4         String?
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
 }

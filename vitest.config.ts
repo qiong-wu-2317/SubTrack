@@ -9,8 +9,10 @@ export default defineConfig({
       "server-only": fileURLToPath(new URL("./tests/server-only-stub.ts", import.meta.url)),
     },
   },
+  // tsconfig has "jsx": "preserve" for Next.js; tests need JSX compiled.
+  esbuild: { jsx: "automatic" },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
     environment: "node",
     passWithNoTests: true,
     // Integration tests (src/server/**) share one throwaway DB, recreated once per run.

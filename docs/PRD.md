@@ -39,6 +39,46 @@ multi-tenant accounts in v1.
 - **US-7** I attach one-time or recurring fees; totals include recurring fees.
 - **US-8** I export all data to CSV / JSON.
 
+## Acceptance criteria
+
+### US-3 Spend dashboard
+Each criterion lists the tests that verify it.
+
+- **AC-3.1 Monthly total.** For each currency, the monthly total is the sum of each active
+  subscription's monthly cost. That cost is its per-cycle amount plus recurring fees, normalized by BR-2
+  and rounded once, half up. One-time fees are excluded (BR-9). Category monthly amounts add up to the total.
+  *Tests:* `billing.test.ts` (monthlyCostCents), `summary.test.ts` (totals, BR-9, category sum).
+- **AC-3.2 Yearly total.** The yearly total is computed per subscription from its cycle (BR-10), never
+  monthly × 12. Category yearly amounts add up to the yearly total.
+  *Tests:* `billing.test.ts` (yearlyCostCents), `summary.test.ts` (BR-10, yearly category sum).
+- **AC-3.3 What counts as spend.** Only `active` subscriptions count (BR-8). Trials are reported
+  separately as a count and their monthly cost after the trial. `paused`, `cancelled` and `expired` are
+  excluded. A non-renewing plan is excluded from the day after its `endDate` (BR-5).
+  *Tests:* `status.test.ts`, `summary.test.ts` (BR-5, BR-8), `services/summary.test.ts` (BR-5).
+- **AC-3.4 Currencies.** There is one summary per currency, amounts are never summed across currencies
+  (BR-6), and summaries are sorted by currency code. `GET /api/summary?currency=XXX` returns only that
+  currency, or an empty list if it has no spend. A malformed code returns 400 `VALIDATION_ERROR` with
+  `fields.currency`.
+  *Tests:* `summary.test.ts` (BR-6), `services/summary.test.ts` (filter), `route.test.ts`.
+- **AC-3.5 Spend by category.** Category names are trimmed and lower-cased, and blank becomes `other`.
+  Rows are sorted by monthly spend, highest first, with ties by name. Each row has monthly, yearly, count,
+  exact `share`, and a whole `percent`; a currency's percents add up to 100 (all 0 when its total is 0).
+  The API returns every category.
+  *Tests:* `summary.test.ts` (category rows, allocatePercents, all categories returned).
+- **AC-3.6 Dashboard category rows.** The dashboard shows at most 5 rows. The smallest categories, and
+  any existing `other`, roll into one trailing `other` row, and percents still add up to 100. Each row
+  shows its monthly amount, percent, subscription count and a bar.
+  *Tests:* `summary.test.ts` (limitCategoryRows), `CategoryBreakdown.test.tsx`.
+- **AC-3.7 Most expensive.** Each currency lists up to 3 active subscriptions with the highest monthly
+  cost; ties go by name, then id. Each entry carries its subscription `id`, so subscriptions that
+  share a name are listed separately.
+  *Tests:* `summary.test.ts` (top subscriptions, AC-3.7), `CurrencySummaryCard.test.tsx` (AC-3.7 keys).
+- **AC-3.8 Dashboard display.** Each currency gets a card with its monthly and yearly totals, active
+  count, and a trials line only when there are trials. Every amount is formatted in that card's
+  currency. With no active or trial subscriptions, an empty state is shown. The page and the API are
+  rendered per request, so BR-5 always uses today's date.
+  *Tests:* `CurrencySummaryCard.test.tsx`, `page.test.tsx`, `route.test.ts` (AC-3.8 per-request rendering).
+
 ## Business rules
 - **BR-1** Money is integer minor units (cents). No floating-point arithmetic on money.
 - **BR-2** Monthly cost normalization: weekly ×52/12, quarterly ÷3, yearly ÷12, custom ×365/12/intervalDays; round to whole cents at the end.

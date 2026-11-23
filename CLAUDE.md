@@ -16,7 +16,7 @@ no bank or card-network connections, and no full card numbers.
 Detailed context is imported below. Treat these files as the source of truth. If
 code and docs disagree, follow the docs and point out the mismatch.
 
-- Product requirements, user stories US-1…US-8, business rules BR-1…BR-7: @docs/PRD.md
+- Product requirements, user stories US-1…US-8, business rules BR-1…BR-10: @docs/PRD.md
 - Layers and architecture decisions (ADR-1…ADR-6): @docs/ARCHITECTURE.md
 - Server Actions, REST routes, error shape: @docs/API.md
 - How to manage context across sessions: @docs/claude-setup/CONTEXT_STRATEGY.md
@@ -29,7 +29,7 @@ code and docs disagree, follow the docs and point out the mismatch.
 | Framework | Next.js 15 App Router, React 19 | Server Components by default. Use `"use client"` only where interactivity needs it. |
 | Language | TypeScript 5, `strict` + `noUncheckedIndexedAccess` | No `any`. Use `unknown` and narrow it. |
 | Data | Prisma 6. SQLite in dev, Postgres-ready | Schema in `prisma/schema.prisma` |
-| Validation | Zod 4 | Single source of truth for enums and inputs (`src/server/schemas.ts`) |
+| Validation | Zod 4 | Input schemas in `src/server/schemas.ts`. Enum value tuples live in `src/lib/types.ts` (pure, importable everywhere) and the Zod enums are built from them |
 | Dates | date-fns 4 | Never do date math with raw milliseconds |
 | Styling | Tailwind CSS 4 | No CSS-in-JS. No component library without asking first. |
 | Tests | Vitest (unit/integration), Playwright (e2e) | |
@@ -40,18 +40,28 @@ Don't add a dependency without asking first. Say why it's needed and check that 
 
 ```bash
 npm run dev                                   # start app on :3000
-npm run check                                 # typecheck + lint + unit tests. MUST pass before "done"
+npm run check                                 # typecheck + lint + unit/integration tests. MUST pass before "done"
+npm run test:coverage                         # enforces 100% line coverage of src/lib
 npx vitest run src/lib/billing.test.ts        # one file (prefer this while iterating)
 npx vitest run -t "clamps month-end dates"    # one test by name
 npm run test:e2e                              # Playwright, specs in tests/e2e/
 npm run db:migrate -- --name <change>         # after editing schema.prisma
 npm run db:generate                           # regenerate Prisma client
+npx prisma db seed                            # fake demo data; skips if the DB already has subscriptions
 ```
 
-**Scaffold state:** these paths are planned but don't exist yet:
-`src/server/{schemas.ts,services/,repo/}`, `src/app/api/`, `src/components/`,
-`prisma/seed.ts`, and the eslint/vitest/playwright configs. Create them where
-`docs/ARCHITECTURE.md` places them. Don't invent a new layout.
+**Setup and state:** first-time setup is `cp .env.example .env && npm install && npm run db:migrate && npx prisma db seed`.
+Before running e2e tests, run `npx playwright install chromium` once. US-3 (dashboard) is done. See
+`docs/PROGRESS.md` for what's next. Create new files where `docs/ARCHITECTURE.md` places them.
+Don't invent a new layout.
+
+- **Test DB:** `tests/global-setup.ts` deletes `prisma/test.db` and runs `prisma migrate deploy` once per
+  Vitest run. Integration test files clear their own tables in `beforeEach`. Never point tests at `dev.db`.
+- **Lint-enforced layering:** ESLint blocks `@prisma/client` imports outside `src/server/repo/` and `prisma/seed.ts`.
+- **Repo mapping:** repo functions map Prisma rows to the domain types in `src/lib/types.ts`, and throw on
+  enum strings outside the allowed lists. Services and UI never see Prisma types.
+- **The `now` edge:** pages and routes create `new Date()` and pass it down. Anything that depends on BR-5 is
+  `force-dynamic`.
 
 ## Architecture rules (summary)
 
@@ -75,7 +85,7 @@ npm run db:generate                           # regenerate Prisma client
 
 - **TDD for domain logic.** Write the failing test in `src/lib/*.test.ts` first, then implement.
 - **Pyramid:**
-  1. **Unit** (`src/lib/**/*.test.ts`): pure functions, every business rule BR-1…BR-7, and edge cases (Jan 31 → Feb 28, leap years, custom intervals, rounding).
+  1. **Unit** (`src/lib/**/*.test.ts`): pure functions, every business rule BR-1…BR-10, and edge cases (Jan 31 → Feb 28, leap years, custom intervals, rounding).
   2. **Integration** (`src/server/**/*.test.ts`): services + repo against a throwaway SQLite DB (`DATABASE_URL=file:./test.db`), reset per file.
   3. **E2E** (`tests/e2e/*.spec.ts`): only the critical flows. Add a subscription, log a payment and see the renewal advance, see an upcoming-expiry warning.
 - **Deterministic time:** pass a fixed `now` or use `vi.useFakeTimers()` with `vi.setSystemTime(...)`. Tests must never depend on today's date.
@@ -89,7 +99,7 @@ npm run db:generate                           # regenerate Prisma client
 - ✅ Use **plan mode** for any change touching more than 2 files or the Prisma schema.
 - ✅ Run the narrowest test while iterating, then `npm run check` before reporting done. Report real output.
 - ✅ Keep migrations additive. Name them (`--name add_trial_end`).
-- ✅ Reuse `advanceRenewal`, `monthlyCostCents` and `formatCents` instead of re-deriving the math.
+- ✅ Reuse the existing math instead of re-deriving it. `src/lib/money.ts` has `cents`, `roundDiv` and `formatCents`. `src/lib/billing.ts` has `monthlyCostCents` and `yearlyCostCents` (BR-10: yearly is never monthly × 12). `src/lib/status.ts` has `effectiveStatus` (BR-5). `src/lib/summary.ts` has `summarizeSpend`, `allocatePercents` and `limitCategoryRows`. `advanceRenewal` comes with US-6.
 - ✅ Make confirmations explicit in the UI for destructive actions (delete cascades payments and fees).
 - ✅ Update `docs/` in the same change when behavior or the API changes.
 

@@ -6,10 +6,10 @@ integer cents. Dates are ISO-8601 strings in UTC.
 ## Server Actions
 | Action | Input | Effect |
 |---|---|---|
-| `createSubscription` | `SubscriptionInput` | Insert; compute `nextRenewal` if omitted |
+| `createSubscription` | `SubscriptionInput` | Insert; compute `nextRenewalDate` if omitted |
 | `updateSubscription` | `id`, partial `SubscriptionInput` | Update; enforce BR-4 status transitions |
 | `deleteSubscription` | `id` | Hard delete (cascades payments and fees) — UI must confirm |
-| `logPayment` | `subscriptionId`, `amountCents`, `paidAt` | Insert Payment; advance `nextRenewal` one cycle |
+| `logPayment` | `subscriptionId`, `amountCents`, `paidAt` | Insert Payment; advance `nextRenewalDate` one cycle |
 | `addFee` | `subscriptionId`, `kind`, `amountCents`, `recurring` | Insert Fee |
 
 ## REST routes
@@ -30,14 +30,20 @@ integer cents. Dates are ISO-8601 strings in UTC.
     "yearlyCents": 122483,
     "activeCount": 6,
     "byCategory": [{ "category": "fitness", "monthlyCents": 3780, "yearlyCents": 45360, "count": 1, "share": 0.37, "percent": 37 }],
-    "topSubscriptions": [{ "name": "FitClub", "monthlyCents": 3780, "yearlyCents": 45360 }],
+    "topSubscriptions": [{ "id": "ckx…", "name": "FitClub", "monthlyCents": 3780, "yearlyCents": 45360 }],
     "trials": { "count": 1, "monthlyCentsAfterTrial": 799 }
   }]
 }
 ```
 `byCategory` is sorted by `monthlyCents`, highest first. `share` is the exact fraction of that currency's monthly spend;
 `percent` is a whole number, and a currency's rows always add up to 100. Category names are normalized: trimmed,
-lower-cased, and `other` when blank. `topSubscriptions` lists the 3 most expensive active subscriptions.
+lower-cased, and `other` when blank. `topSubscriptions` lists the 3 most expensive active subscriptions (ties: name, then `id`); each carries its
+subscription `id`, since names are not unique.
+Each subscription's cost (amount + recurring fees) is rounded once, half up, to whole cents. Currency and
+category totals are sums of those rounded values, so rows always add up to the total. Status is evaluated
+as of the request time: a non-renewing `active` or `cancelled` plan counts as `expired` from the day after
+its `endDate` (BR-5). Currencies with neither active nor trial subscriptions are omitted. `percent` uses the
+largest-remainder method; `share` and `percent` are 0 when the currency's monthly total is 0.
 The dashboard limits the breakdown to 5 rows (smaller categories roll into `other`). The API returns every category.
 An invalid `currency` returns 400 `VALIDATION_ERROR` with `fields.currency`.
 
