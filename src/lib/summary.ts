@@ -1,7 +1,7 @@
 import { monthlyCostCents, yearlyCostCents } from "@/lib/billing";
 import { cents, type Cents } from "@/lib/money";
 import { effectiveStatus } from "@/lib/status";
-import type { SubscriptionRecord } from "@/lib/types";
+import type { SubscriptionRecord, SubscriptionStatus } from "@/lib/types";
 
 export type CategoryRow = {
   category: string;
@@ -120,9 +120,27 @@ function summarizeCurrency(currency: string, active: Costed[], trials: Costed[])
 }
 
 /**
- * US-3: spend per currency as of `now`.
+ * BR-8: only active subscriptions count as spend; trials are reported separately;
+ * paused, cancelled and expired are left out.
+ */
+function spendBucket(status: SubscriptionStatus): "active" | "trials" | null {
+  if (status === "active") return "active";
+  if (status === "trial") return "trials";
+  return null;
+}
+
+function costed(sub: SubscriptionRecord): Costed {
+  return {
+    name: sub.name,
+    category: normalizeCategory(sub.category),
+    monthly: monthlyCostCents(sub),
+    yearly: yearlyCostCents(sub),
+  };
+}
+
+/**
+ * US-3: spend per currency as of `now` (BR-5 via effectiveStatus, BR-8 via spendBucket).
  * BR-6: one summary per currency, never summed across currencies.
- * BR-8: only active subscriptions count as spend; trials are reported separately.
  */
 export function summarizeSpend(
   subscriptions: readonly SubscriptionRecord[],
@@ -131,17 +149,12 @@ export function summarizeSpend(
   const byCurrency = new Map<string, { active: Costed[]; trials: Costed[] }>();
 
   for (const sub of subscriptions) {
-    const status = effectiveStatus(sub, now);
-    if (status !== "active" && status !== "trial") continue;
+    const bucket = spendBucket(effectiveStatus(sub, now));
+    if (bucket === null) continue;
 
-    const bucket = byCurrency.get(sub.currency) ?? { active: [], trials: [] };
-    (status === "active" ? bucket.active : bucket.trials).push({
-      name: sub.name,
-      category: normalizeCategory(sub.category),
-      monthly: monthlyCostCents(sub),
-      yearly: yearlyCostCents(sub),
-    });
-    byCurrency.set(sub.currency, bucket);
+    const group = byCurrency.get(sub.currency) ?? { active: [], trials: [] };
+    group[bucket].push(costed(sub));
+    byCurrency.set(sub.currency, group);
   }
 
   return [...byCurrency]
