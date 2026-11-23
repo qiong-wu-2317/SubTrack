@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Cents } from "@/lib/money";
 import {
   allocatePercents,
   limitCategoryRows,
   normalizeCategory,
   summarizeSpend,
-  type CategoryRow,
 } from "@/lib/summary";
 import type { BillingCycle, Fee, SubscriptionRecord, SubscriptionStatus } from "@/lib/types";
-
-// Test data is built with a cast so fixtures never depend on the code under test.
-const c = (n: number) => n as Cents;
+import { asCents, categoryRow } from "../../tests/fixtures";
 
 const NOW = new Date("2026-03-15T12:00:00Z");
 
@@ -31,7 +27,7 @@ function sub(overrides: {
   return {
     id: `s${seq}`,
     name: overrides.name ?? `Sub ${seq}`,
-    amountCents: c(overrides.amount),
+    amountCents: asCents(overrides.amount),
     currency: overrides.currency ?? "USD",
     category: overrides.category ?? "streaming",
     billingCycle: overrides.billingCycle ?? "monthly",
@@ -144,8 +140,8 @@ describe("summarizeSpend", () => {
           sub({
             amount: 1000,
             fees: [
-              { kind: "tax", amountCents: c(80), recurring: true },
-              { kind: "setup", amountCents: c(2500), recurring: false },
+              { kind: "tax", amountCents: asCents(80), recurring: true },
+              { kind: "setup", amountCents: asCents(2500), recurring: false },
             ],
           }),
         ],
@@ -308,14 +304,7 @@ describe("allocatePercents", () => {
 });
 
 describe("limitCategoryRows", () => {
-  const row = (category: string, monthly: number, percent: number): CategoryRow => ({
-    category,
-    monthlyCents: c(monthly),
-    yearlyCents: c(monthly * 12),
-    count: 1,
-    share: percent / 100,
-    percent,
-  });
+  const row = categoryRow;
 
   it("returns rows unchanged when within the limit", () => {
     const rows = [row("a", 300, 60), row("b", 200, 40)];

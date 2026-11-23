@@ -1,27 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardPage from "@/app/page";
-import type { Cents } from "@/lib/money";
-import type { CurrencySummary } from "@/lib/summary";
 import { getSpendSummary } from "@/server/services/summary";
+import { asCents, currencySummary } from "../../tests/fixtures";
 import { count, render } from "../../tests/render";
 
 // The page is a thin shell over the service; the service has its own integration test.
 vi.mock("@/server/services/summary", () => ({ getSpendSummary: vi.fn() }));
 const mockedSummary = vi.mocked(getSpendSummary);
 
-const c = (n: number) => n as Cents;
-
-function summary(currency: string, monthly: number): CurrencySummary {
-  return {
-    currency,
-    monthlyCents: c(monthly),
-    yearlyCents: c(monthly * 12),
-    activeCount: 1,
-    byCategory: [],
-    topSubscriptions: [],
-    trials: { count: 0, monthlyCentsAfterTrial: c(0) },
-  };
-}
+const summary = (currency: string, monthly: number) =>
+  currencySummary({ currency, monthlyCents: asCents(monthly), activeCount: 1 });
 
 async function renderPage() {
   return render(await DashboardPage());

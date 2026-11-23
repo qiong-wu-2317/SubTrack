@@ -1,27 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { CurrencySummaryCard } from "@/components/CurrencySummaryCard";
-import type { Cents } from "@/lib/money";
 import type { CurrencySummary } from "@/lib/summary";
+import { asCents as c, categoryRow, currencySummary } from "../../tests/fixtures";
 import { render } from "../../tests/render";
 
-const c = (n: number) => n as Cents;
-
+/** A populated USD card; tests override what they check. */
 function summary(overrides: Partial<CurrencySummary> = {}): CurrencySummary {
-  return {
-    currency: "USD",
+  return currencySummary({
     monthlyCents: c(12366),
     yearlyCents: c(148389),
     activeCount: 7,
-    byCategory: [
-      { category: "fitness", monthlyCents: c(3780), yearlyCents: c(45360), count: 1, share: 1, percent: 100 },
-    ],
+    byCategory: [categoryRow("fitness", 3780, 100)],
     topSubscriptions: [
       { name: "FitClub", monthlyCents: c(3780), yearlyCents: c(45360) },
       { name: "PhonePlan", monthlyCents: c(2150), yearlyCents: c(25800) },
     ],
-    trials: { count: 0, monthlyCentsAfterTrial: c(0) },
     ...overrides,
-  };
+  });
 }
 
 describe("CurrencySummaryCard", () => {

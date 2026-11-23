@@ -1,21 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CategoryBreakdown } from "@/components/CategoryBreakdown";
-import type { Cents } from "@/lib/money";
-import type { CategoryRow } from "@/lib/summary";
+import { categoryRow as row } from "../../tests/fixtures";
 import { count, render } from "../../tests/render";
-
-const c = (n: number) => n as Cents;
-
-function row(category: string, monthly: number, percent: number, rowCount = 1): CategoryRow {
-  return {
-    category,
-    monthlyCents: c(monthly),
-    yearlyCents: c(monthly * 12),
-    count: rowCount,
-    share: percent / 100,
-    percent,
-  };
-}
 
 describe("CategoryBreakdown", () => {
   it("shows an empty message when there is no active spend", () => {
