@@ -17,7 +17,7 @@
     one criterion at a time. Tests for behavior that already existed were each verified by a deliberate
     code break, and AC-3.7 (top entries carry `id`) was test-first red → green. Each criterion was
     followed by a refactor.
-  - Verified: `npm run check` (103 tests), `npm run test:coverage`, `next build`, and live `/` and
+  - Verified: `npm run check` (105 tests), `npm run test:coverage`, `next build`, and live `/` and
     `/api/summary` against the seed. Totals matched hand-computed values.
 
 ## Decisions made during US-3
