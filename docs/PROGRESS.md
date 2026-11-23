@@ -4,9 +4,9 @@
 - **Scaffold:** Next.js 15.5 (App Router), React 19, TypeScript strict + `noUncheckedIndexedAccess`,
   Tailwind 4, Prisma 6 (SQLite), Zod 4, date-fns 4, Vitest 3, Playwright. npm 11 `allowScripts`
   approves install scripts only for `prisma`, `@prisma/client`, `@prisma/engines` and `esbuild`.
-- **US-3 spend dashboard**, built with strict TDD (plan: `~/.claude/plans/i-want-to-implement-zesty-snowflake.md`).
-  Red commit `2e1d8c7` (95 tests, 92 failing in their own feature), then green one layer at a time.
-  The earlier test-after build is kept on branch `backup/us3-test-after` for the record only.
+- **US-3 spend dashboard**, built with strict TDD. Workflow record: `docs/workflow/US-3/`
+  (explore → plan → implement → refactor, tagged `us3-explore`, `us3-plan`, `us3-implement`, `us3-refactor`).
+  The red commit (tag `us3-implement`) had 95 tests with 92 failing in their own feature; then green one layer at a time.
   - Domain (`src/lib`, 100% line coverage): `money` (BR-1), `billing` (BR-2, BR-9, BR-10),
     `status` (BR-4, BR-5), `summary` (BR-6, BR-8, category rows, percents, top 3, 5-row rollup).
   - Migration `add_subscriptions`: Subscription, Fee and PaymentMethod. Payment comes with US-6.
