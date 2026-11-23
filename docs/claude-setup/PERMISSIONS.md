@@ -20,7 +20,7 @@ When several tiers match, deny wins over ask, and ask wins over allow.
 ### Allow: the inner loop
 The commands from `CLAUDE.md` § Commands that only read or verify:
 
-- `npm run check`, `npm run dev`, `npm run test:e2e`, `npx vitest …`, `npx tsc --noEmit`, `npx eslint …`
+- `npm run check`, `npm run dev`, `npm run test:coverage`, `npm run test:e2e`, `npx vitest …`, `npx tsc --noEmit`, `npx eslint …`
 - `npm run db:generate` / `npx prisma generate`: regenerates the client and doesn't touch data
 - Read-only git: `git status`, `git diff`, `git log`, `git show`
 
@@ -47,31 +47,36 @@ before reporting done. Prompting on every test run would make that loop impracti
 
 ## `.claude/settings.json`
 
+The active configuration, [`.claude/settings.json`](../../.claude/settings.json), is committed and reproduced here.
+A rule like `Bash(git push *)` matches the command with any arguments, and the bare command too.
+
 ```json
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(npm run check)",
       "Bash(npm run dev)",
+      "Bash(npm run test:coverage)",
       "Bash(npm run test:e2e)",
       "Bash(npm run db:generate)",
-      "Bash(npx vitest:*)",
-      "Bash(npx tsc --noEmit:*)",
-      "Bash(npx eslint:*)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx eslint *)",
       "Bash(npx prisma generate)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git show:*)"
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)"
     ],
     "ask": [
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(npm install:*)",
-      "Bash(npm i:*)",
-      "Bash(npm uninstall:*)",
-      "Bash(npm run db:migrate:*)",
-      "Bash(npx prisma migrate dev:*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npm install *)",
+      "Bash(npm i *)",
+      "Bash(npm uninstall *)",
+      "Bash(npm run db:migrate *)",
+      "Bash(npx prisma migrate dev *)",
       "WebFetch",
       "WebSearch"
     ],
@@ -79,13 +84,13 @@ before reporting done. Prompting on every test run would make that loop impracti
       "Read(./.env)",
       "Read(./.env.local)",
       "Read(./.env.*.local)",
-      "Bash(npx prisma migrate reset:*)",
-      "Bash(npx prisma db push --force-reset:*)",
-      "Bash(rm -rf prisma/migrations:*)",
-      "Bash(git push:*)",
-      "Bash(git rebase:*)",
-      "Bash(git reset --hard:*)",
-      "Bash(git commit --amend:*)"
+      "Bash(npx prisma migrate reset *)",
+      "Bash(npx prisma db push --force-reset *)",
+      "Bash(rm -rf prisma/migrations *)",
+      "Bash(git push *)",
+      "Bash(git rebase *)",
+      "Bash(git reset --hard *)",
+      "Bash(git commit --amend *)"
     ]
   }
 }
