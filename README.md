@@ -8,9 +8,10 @@ Built with Claude Code using an **Explore → Plan → Implement → Commit** wo
 
 | Deliverable | Where |
 |---|---|
-| 1. Feature code with TDD git history (red → green → refactor) | [US-3 spend dashboard](#1-feature-us-3-spend-dashboard) · tags `us3-explore` → `us3-refactor` |
-| 2. Annotated Claude Code session log | [`docs/claude-setup/SESSION_LOG.md`](docs/claude-setup/SESSION_LOG.md) |
-| 3. Reflection document | [`docs/claude-setup/REFLECTION.md`](docs/claude-setup/REFLECTION.md) |
+| 1. Claude Code configuration | [`CLAUDE.md`](CLAUDE.md) · [`.claude/settings.json`](.claude/settings.json) (permissions) · [policy and rationale](docs/claude-setup/PERMISSIONS.md) |
+| 2. Feature code with TDD git history (red → green → refactor) | [US-3 spend dashboard](#1-feature-us-3-spend-dashboard) · tags `us3-explore` → `us3-refactor` |
+| 3. Annotated Claude Code session log | [`docs/claude-setup/SESSION_LOG.md`](docs/claude-setup/SESSION_LOG.md) |
+| 4. Reflection document | [`docs/claude-setup/REFLECTION.md`](docs/claude-setup/REFLECTION.md) |
 
 ---
 
@@ -87,6 +88,40 @@ PR or file). It ends with lessons, a table of mistakes and how each was caught, 
 
 ---
 
+## 4. Claude Code configuration
+
+### [`CLAUDE.md`](CLAUDE.md): project memory
+Loaded automatically at the start of every Claude Code session. It started from `/init` and was then
+edited by hand.
+
+| Section | What it gives Claude |
+|---|---|
+| Project context | What SubTrack is and isn't (records payments, never makes them), plus `@`-imports of [`PRD.md`](docs/PRD.md), [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`API.md`](docs/API.md), so requirements, ADRs and the API contract are in context from the first prompt |
+| Tech stack | Pinned choices (Next.js 15, Prisma 6, Zod 4, …) and "ask before adding a dependency" |
+| Commands | `npm run check`, single-file and single-test runs, migrations, seed; plus setup state, the test DB and lint-enforced layering |
+| Architecture rules | UI → actions/routes → services → repo → Prisma; only `src/server/repo` imports Prisma (enforced by ESLint) |
+| Coding conventions | Integer `Cents` money, `…At` / `…Date` naming, `now` passed in, Conventional Commits, comments citing rule IDs |
+| Testing strategy | TDD for domain logic, the test pyramid, deterministic time, 100% `src/lib` coverage, a named test per business rule |
+| Do's / Don'ts | Plan mode for multi-file or schema changes, reuse existing helpers, no floats for money, never read `.env`, no push or history rewrite unless asked |
+
+`CLAUDE.local.md` (gitignored) holds personal, uncommitted preferences.
+
+### [`.claude/settings.json`](.claude/settings.json): permissions
+Committed and shared, so every session gets the same rules. The reason for each rule is in
+[`PERMISSIONS.md`](docs/claude-setup/PERMISSIONS.md).
+
+| Tier | Effect | Rules |
+|---|---|---|
+| **allow** (13) | Runs without a prompt | the dev loop: `npm run check` / `test:coverage` / `test:e2e` / `dev`, `npx vitest`, `npx tsc --noEmit`, `npx eslint`, `prisma generate`, read-only git |
+| **ask** (9) | Prompts every time | `git add` / `commit`, `npm install` / `uninstall`, migrations, `WebFetch` / `WebSearch` |
+| **deny** (10) | Blocked | reading `.env`, `prisma migrate reset`, `db push --force-reset`, deleting `prisma/migrations`, `git push` / `rebase` / `reset --hard` / `commit --amend` |
+
+Deny wins over ask, and ask wins over allow. Personal overrides go in `.claude/settings.local.json` (gitignored).
+Bash rules match command prefixes, so they're a guardrail, not a security boundary
+(see [Limits](docs/claude-setup/PERMISSIONS.md#limits)).
+
+---
+
 ## Getting started
 
 Requires Node ≥ 22 and npm.
@@ -113,6 +148,4 @@ date-fns 4 · Tailwind 4 · Vitest · Playwright
 - [`docs/PRD.md`](docs/PRD.md): user stories, business rules BR-1…BR-10, US-3 acceptance criteria
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): layers and ADRs
 - [`docs/API.md`](docs/API.md): Server Actions, REST routes, error format
-- [`CLAUDE.md`](CLAUDE.md): guidance for Claude Code in this repo
-- [`docs/claude-setup/PERMISSIONS.md`](docs/claude-setup/PERMISSIONS.md): Claude Code permission policy
 - [`docs/PROGRESS.md`](docs/PROGRESS.md): what's done, what's next, open questions
