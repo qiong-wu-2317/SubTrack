@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { monthlyCostCents, yearlyCostCents } from "@/lib/billing";
-import type { Cents } from "@/lib/money";
 import type { Billable, BillingCycle, Fee } from "@/lib/types";
-
-// Test data is built with a cast so fixtures never depend on the code under test.
-const c = (n: number) => n as Cents;
+import { asCents } from "../../tests/fixtures";
 
 function billable(
   amount: number,
@@ -12,7 +9,7 @@ function billable(
   opts: { intervalDays?: number | null; fees?: Fee[] } = {},
 ): Billable {
   return {
-    amountCents: c(amount),
+    amountCents: asCents(amount),
     billingCycle,
     intervalDays: opts.intervalDays ?? null,
     fees: opts.fees ?? [],
@@ -21,7 +18,7 @@ function billable(
 
 const fee = (amount: number, recurring: boolean): Fee => ({
   kind: "tax",
-  amountCents: c(amount),
+  amountCents: asCents(amount),
   recurring,
 });
 
