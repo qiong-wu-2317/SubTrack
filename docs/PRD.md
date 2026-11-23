@@ -70,13 +70,14 @@ Each criterion lists the tests that verify it.
   shows its monthly amount, percent, subscription count and a bar.
   *Tests:* `summary.test.ts` (limitCategoryRows), `CategoryBreakdown.test.tsx`.
 - **AC-3.7 Most expensive.** Each currency lists up to 3 active subscriptions with the highest monthly
-  cost, ties by name. Subscriptions that share a name are listed separately.
-  *Tests:* `summary.test.ts` (top subscriptions), `CurrencySummaryCard.test.tsx`.
+  cost; ties go by name, then id. Each entry carries its subscription `id`, so subscriptions that
+  share a name are listed separately.
+  *Tests:* `summary.test.ts` (top subscriptions, AC-3.7), `CurrencySummaryCard.test.tsx` (AC-3.7 keys).
 - **AC-3.8 Dashboard display.** Each currency gets a card with its monthly and yearly totals, active
   count, and a trials line only when there are trials. Every amount is formatted in that card's
   currency. With no active or trial subscriptions, an empty state is shown. The page and the API are
   rendered per request, so BR-5 always uses today's date.
-  *Tests:* `CurrencySummaryCard.test.tsx`, `page.test.tsx`, `route.test.ts`.
+  *Tests:* `CurrencySummaryCard.test.tsx`, `page.test.tsx`, `route.test.ts` (AC-3.8 per-request rendering).
 
 ## Business rules
 - **BR-1** Money is integer minor units (cents). No floating-point arithmetic on money.
