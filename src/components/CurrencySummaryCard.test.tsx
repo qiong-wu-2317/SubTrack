@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CurrencySummaryCard } from "@/components/CurrencySummaryCard";
 import type { CurrencySummary } from "@/lib/summary";
 import { asCents as c, categoryRow, currencySummary } from "../../tests/fixtures";
-import { render } from "../../tests/render";
+import { duplicateKeys, render } from "../../tests/render";
 
 /** A populated USD card; tests override what they check. */
 function summary(overrides: Partial<CurrencySummary> = {}): CurrencySummary {
@@ -12,14 +12,15 @@ function summary(overrides: Partial<CurrencySummary> = {}): CurrencySummary {
     activeCount: 7,
     byCategory: [categoryRow("fitness", 3780, 100)],
     topSubscriptions: [
-      { name: "FitClub", monthlyCents: c(3780), yearlyCents: c(45360) },
-      { name: "PhonePlan", monthlyCents: c(2150), yearlyCents: c(25800) },
+      { id: "fitclub", name: "FitClub", monthlyCents: c(3780), yearlyCents: c(45360) },
+      { id: "phoneplan", name: "PhonePlan", monthlyCents: c(2150), yearlyCents: c(25800) },
     ],
     ...overrides,
   });
 }
 
 describe("CurrencySummaryCard", () => {
+
   it("US-3: shows the currency with its monthly and yearly totals", () => {
     const { text } = render(<CurrencySummaryCard summary={summary()} />);
     expect(text).toContain("USD");
@@ -52,6 +53,19 @@ describe("CurrencySummaryCard", () => {
     expect(text).not.toContain("Most expensive");
   });
 
+  it("AC-3.7: lists same-named subscriptions separately, keyed by id", () => {
+    const sameName = summary({
+      topSubscriptions: [
+        { id: "gym-home", name: "Gym", monthlyCents: c(3000), yearlyCents: c(36000) },
+        { id: "gym-work", name: "Gym", monthlyCents: c(2000), yearlyCents: c(24000) },
+      ],
+    });
+    expect(render(<CurrencySummaryCard summary={sameName} />).text).toMatch(
+      /Gym \$30\.00\/mo Gym \$20\.00\/mo/,
+    );
+    expect(duplicateKeys(CurrencySummaryCard({ summary: sameName }))).toEqual([]);
+  });
+
   it("BR-8: reports trials separately with their cost after the trial", () => {
     const { text } = render(
       <CurrencySummaryCard summary={summary({ trials: { count: 1, monthlyCentsAfterTrial: c(2999) } })} />,
@@ -81,7 +95,7 @@ describe("CurrencySummaryCard", () => {
       monthlyCents: c(1999),
       yearlyCents: c(23988),
       byCategory: [],
-      topSubscriptions: [{ name: "Musik Plus", monthlyCents: c(999), yearlyCents: c(11988) }],
+      topSubscriptions: [{ id: "musik", name: "Musik Plus", monthlyCents: c(999), yearlyCents: c(11988) }],
     });
     const { text } = render(<CurrencySummaryCard summary={eur} />);
     expect(text).toMatch(/Monthly €19\.99/);

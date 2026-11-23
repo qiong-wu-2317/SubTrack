@@ -12,6 +12,7 @@ const NOW = new Date("2026-03-15T12:00:00Z");
 
 let seq = 0;
 function sub(overrides: {
+  id?: string;
   name?: string;
   amount: number;
   currency?: string;
@@ -25,7 +26,7 @@ function sub(overrides: {
 }): SubscriptionRecord {
   seq += 1;
   return {
-    id: `s${seq}`,
+    id: overrides.id ?? `s${seq}`,
     name: overrides.name ?? `Sub ${seq}`,
     amountCents: asCents(overrides.amount),
     currency: overrides.currency ?? "USD",
@@ -241,19 +242,19 @@ describe("summarizeSpend", () => {
     const usd = only(
       summarizeSpend(
         [
-          sub({ name: "Small", amount: 100 }),
-          sub({ name: "Gym", amount: 3780 }),
-          sub({ name: "Cloud", amount: 24000, billingCycle: "yearly" }),
-          sub({ name: "Music", amount: 1099 }),
-          sub({ name: "Trial", amount: 99999, status: "trial" }),
+          sub({ id: "small", name: "Small", amount: 100 }),
+          sub({ id: "gym", name: "Gym", amount: 3780 }),
+          sub({ id: "cloud", name: "Cloud", amount: 24000, billingCycle: "yearly" }),
+          sub({ id: "music", name: "Music", amount: 1099 }),
+          sub({ id: "trial", name: "Trial", amount: 99999, status: "trial" }),
         ],
         NOW,
       ),
     );
     expect(usd.topSubscriptions).toEqual([
-      { name: "Gym", monthlyCents: 3780, yearlyCents: 45360 },
-      { name: "Cloud", monthlyCents: 2000, yearlyCents: 24000 },
-      { name: "Music", monthlyCents: 1099, yearlyCents: 13188 },
+      { id: "gym", name: "Gym", monthlyCents: 3780, yearlyCents: 45360 },
+      { id: "cloud", name: "Cloud", monthlyCents: 2000, yearlyCents: 24000 },
+      { id: "music", name: "Music", monthlyCents: 1099, yearlyCents: 13188 },
     ]);
   });
 
@@ -262,6 +263,33 @@ describe("summarizeSpend", () => {
       summarizeSpend([sub({ name: "Beta", amount: 500 }), sub({ name: "Alpha", amount: 500 })], NOW),
     );
     expect(usd.topSubscriptions.map((t) => t.name)).toEqual(["Alpha", "Beta"]);
+  });
+
+  it("AC-3.7: each top entry carries its subscription id, so same-named ones stay distinct", () => {
+    const usd = only(
+      summarizeSpend(
+        [
+          sub({ id: "gym-home", name: "Gym", amount: 3000 }),
+          sub({ id: "gym-work", name: "Gym", amount: 2000 }),
+          sub({ id: "music", name: "Music", amount: 1000 }),
+        ],
+        NOW,
+      ),
+    );
+    expect(usd.topSubscriptions.map((t) => [t.id, t.name])).toEqual([
+      ["gym-home", "Gym"],
+      ["gym-work", "Gym"],
+      ["music", "Music"],
+    ]);
+  });
+
+  it("AC-3.7: same name and same cost are ordered by id, independent of input order", () => {
+    const a = sub({ id: "a", name: "Gym", amount: 500 });
+    const b = sub({ id: "b", name: "Gym", amount: 500 });
+    const ids = (subs: SubscriptionRecord[]) =>
+      only(summarizeSpend(subs, NOW)).topSubscriptions.map((t) => t.id);
+    expect(ids([b, a])).toEqual(["a", "b"]);
+    expect(ids([a, b])).toEqual(["a", "b"]);
   });
 
   it("free subscriptions give zero share and percent instead of dividing by zero", () => {

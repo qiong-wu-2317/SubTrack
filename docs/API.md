@@ -30,14 +30,15 @@ integer cents. Dates are ISO-8601 strings in UTC.
     "yearlyCents": 122483,
     "activeCount": 6,
     "byCategory": [{ "category": "fitness", "monthlyCents": 3780, "yearlyCents": 45360, "count": 1, "share": 0.37, "percent": 37 }],
-    "topSubscriptions": [{ "name": "FitClub", "monthlyCents": 3780, "yearlyCents": 45360 }],
+    "topSubscriptions": [{ "id": "ckx…", "name": "FitClub", "monthlyCents": 3780, "yearlyCents": 45360 }],
     "trials": { "count": 1, "monthlyCentsAfterTrial": 799 }
   }]
 }
 ```
 `byCategory` is sorted by `monthlyCents`, highest first. `share` is the exact fraction of that currency's monthly spend;
 `percent` is a whole number, and a currency's rows always add up to 100. Category names are normalized: trimmed,
-lower-cased, and `other` when blank. `topSubscriptions` lists the 3 most expensive active subscriptions.
+lower-cased, and `other` when blank. `topSubscriptions` lists the 3 most expensive active subscriptions (ties: name, then `id`); each carries its
+subscription `id`, since names are not unique.
 Each subscription's cost (amount + recurring fees) is rounded once, half up, to whole cents. Currency and
 category totals are sums of those rounded values, so rows always add up to the total. Status is evaluated
 as of the request time: a non-renewing `active` or `cancelled` plan counts as `expired` from the day after
