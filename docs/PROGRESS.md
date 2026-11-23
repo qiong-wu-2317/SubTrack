@@ -13,7 +13,11 @@
   - `getSpendSummary` service, `GET /api/summary`, and the dashboard at `/` all share one code path.
   - `prisma/seed.ts`: fake USD and EUR data covering every cycle, a trial, a paused plan, an expired plan, and fees.
   - UI tests render with `react-dom/server` (`tests/render.ts`) and assume the `en-US` locale for currency strings.
-  - Verified: `npm run check` (95 tests), `npm run test:coverage`, `next build`, and live `/` and
+  - Acceptance criteria AC-3.1…AC-3.8 are in `docs/PRD.md`, each mapped to its tests. Gaps were closed
+    one criterion at a time. Tests for behavior that already existed were each verified by a deliberate
+    code break, and AC-3.7 (top entries carry `id`) was test-first red → green. Each criterion was
+    followed by a refactor.
+  - Verified: `npm run check` (103 tests), `npm run test:coverage`, `next build`, and live `/` and
     `/api/summary` against the seed. Totals matched hand-computed values.
 
 ## Decisions made during US-3
