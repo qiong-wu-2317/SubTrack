@@ -15,6 +15,8 @@ export type CategoryRow = {
 };
 
 export type TopSubscription = {
+  /** Subscription id; names are not unique (AC-3.7). */
+  id: string;
   name: string;
   monthlyCents: Cents;
   yearlyCents: Cents;
@@ -37,6 +39,7 @@ type SpendBucket = "active" | "trials";
 
 /** A counted subscription with its costs worked out once. */
 type Costed = {
+  id: string;
   name: string;
   category: string;
   currency: string;
@@ -80,9 +83,11 @@ function shareOf(part: number, total: number): number {
   return total === 0 ? 0 : part / total;
 }
 
-/** Highest monthly first; ties broken alphabetically by `key` so output is stable. */
-function byMonthlyThen<T extends { monthlyCents: number }>(key: (item: T) => string) {
-  return (a: T, b: T) => b.monthlyCents - a.monthlyCents || key(a).localeCompare(key(b));
+/** Highest monthly first; ties broken by each key in turn so output is deterministic. */
+function byMonthlyThen<T extends { monthlyCents: number }>(...keys: ((item: T) => string)[]) {
+  return (a: T, b: T) =>
+    b.monthlyCents - a.monthlyCents ||
+    keys.reduce((order, key) => order || key(a).localeCompare(key(b)), 0);
 }
 
 function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, T[]> {
@@ -115,8 +120,13 @@ function categoryRows(active: readonly Costed[], totalMonthly: number): Category
 
 function topSubscriptions(active: readonly Costed[]): TopSubscription[] {
   return active
-    .map((i) => ({ name: i.name, monthlyCents: i.monthly, yearlyCents: i.yearly }))
-    .sort(byMonthlyThen((t) => t.name))
+    .map((i) => ({ id: i.id, name: i.name, monthlyCents: i.monthly, yearlyCents: i.yearly }))
+    .sort(
+      byMonthlyThen(
+        (t) => t.name,
+        (t) => t.id,
+      ),
+    )
     .slice(0, TOP_SUBSCRIPTIONS);
 }
 
@@ -147,6 +157,7 @@ function spendBucket(status: SubscriptionStatus): SpendBucket | null {
 
 function costed(sub: SubscriptionRecord, bucket: SpendBucket): Costed {
   return {
+    id: sub.id,
     name: sub.name,
     category: normalizeCategory(sub.category),
     currency: sub.currency,

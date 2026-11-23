@@ -48,7 +48,7 @@ export function CurrencySummaryCard({ summary }: { summary: CurrencySummary }) {
           <h3 className="mt-6 mb-2 text-sm font-medium">Most expensive</h3>
           <ol className="space-y-1 text-sm">
             {summary.topSubscriptions.map((top) => (
-              <li key={top.name} className="flex justify-between gap-4">
+              <li key={top.id} className="flex justify-between gap-4">
                 <span>{top.name}</span>
                 <span className="tabular-nums text-neutral-600 dark:text-neutral-400">
                   {money(top.monthlyCents)}/mo
